@@ -177,7 +177,17 @@ public class LibroFrame extends JFrame {
         
         btnAgregar.addActionListener(e -> agregarLibro());
         btnLimpiar.addActionListener(e -> limpiarCampos());
+        btnActualizar.addActionListener(e -> actualizarLibro());
+        btnEliminar.addActionListener(e -> eliminarLibro());
+
+        tablaLibros.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                cargarLibroSeleccionado();
+            }
+        });
     }
+    
+    
 
     private void agregarLibro() {
 
@@ -334,7 +344,204 @@ public class LibroFrame extends JFrame {
         cmbCategoria.setSelectedIndex(0);
         cmbFormato.setSelectedIndex(0);
 
+        tablaLibros.clearSelection();
+
+        txtIsbn.setEditable(true);
         txtIsbn.requestFocus();
+    }
+    
+    private void cargarLibroSeleccionado() {
+
+        int fila = tablaLibros.getSelectedRow();
+
+        if (fila == -1) {
+            return;
+        }
+
+        txtIsbn.setText(modeloTabla.getValueAt(fila, 0).toString());
+        txtTitulo.setText(modeloTabla.getValueAt(fila, 1).toString());
+        txtAutor.setText(modeloTabla.getValueAt(fila, 2).toString());
+        txtAnio.setText(modeloTabla.getValueAt(fila, 3).toString());
+
+        cmbCategoria.setSelectedItem(
+                modeloTabla.getValueAt(fila, 4).toString());
+
+        txtEditorial.setText(
+                modeloTabla.getValueAt(fila, 5).toString());
+
+        txtPaginas.setText(
+                modeloTabla.getValueAt(fila, 6).toString());
+
+        txtPrecio.setText(
+                modeloTabla.getValueAt(fila, 7).toString());
+
+        txtCantidad.setText(
+                modeloTabla.getValueAt(fila, 8).toString());
+
+        cmbFormato.setSelectedItem(
+                modeloTabla.getValueAt(fila, 9).toString());
+
+        // El ISBN identifica al libro y no debe modificarse
+        txtIsbn.setEditable(false);
+    }
+    
+    private void actualizarLibro() {
+
+        int fila = tablaLibros.getSelectedRow();
+
+        if (fila == -1) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Seleccione un libro de la tabla para actualizar.",
+                    "Actualizar libro",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        try {
+
+            if (txtTitulo.getText().trim().isEmpty()
+                    || txtAutor.getText().trim().isEmpty()
+                    || txtAnio.getText().trim().isEmpty()
+                    || txtEditorial.getText().trim().isEmpty()
+                    || txtPaginas.getText().trim().isEmpty()
+                    || txtPrecio.getText().trim().isEmpty()
+                    || txtCantidad.getText().trim().isEmpty()) {
+
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Todos los campos son obligatorios.");
+                return;
+            }
+
+            String isbn = txtIsbn.getText().trim();
+            String titulo = txtTitulo.getText().trim();
+            String autor = txtAutor.getText().trim();
+            int anio = Integer.parseInt(txtAnio.getText().trim());
+
+            String categoria =
+                    cmbCategoria.getSelectedItem().toString();
+
+            String editorial =
+                    txtEditorial.getText().trim();
+
+            int paginas =
+                    Integer.parseInt(txtPaginas.getText().trim());
+
+            double precio =
+                    Double.parseDouble(txtPrecio.getText().trim());
+
+            int cantidad =
+                    Integer.parseInt(txtCantidad.getText().trim());
+
+            String formato =
+                    cmbFormato.getSelectedItem().toString();
+
+            if (anio <= 0 || paginas <= 0 || precio <= 0 || cantidad < 0) {
+
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Verifique los valores numéricos ingresados.",
+                        "Validación",
+                        JOptionPane.WARNING_MESSAGE);
+
+                return;
+            }
+
+            Libro libroActualizado = new Libro(
+                    isbn,
+                    titulo,
+                    autor,
+                    anio,
+                    categoria,
+                    editorial,
+                    paginas,
+                    precio,
+                    cantidad,
+                    formato);
+
+            boolean actualizado =
+                    libroService.actualizarLibro(isbn, libroActualizado);
+
+            if (actualizado) {
+
+                actualizarTabla();
+                limpiarCampos();
+
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Libro actualizado correctamente.");
+
+            } else {
+
+                JOptionPane.showMessageDialog(
+                        this,
+                        "No fue posible actualizar el libro.",
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE);
+            }
+
+        } catch (NumberFormatException e) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Año, páginas, precio y cantidad deben contener valores numéricos válidos.",
+                    "Error de formato",
+                    JOptionPane.ERROR_MESSAGE);
+        }
+    }
+    
+    private void eliminarLibro() {
+
+        int fila = tablaLibros.getSelectedRow();
+
+        if (fila == -1) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Seleccione un libro de la tabla para eliminar.",
+                    "Eliminar libro",
+                    JOptionPane.WARNING_MESSAGE);
+
+            return;
+        }
+
+        String isbn =
+                modeloTabla.getValueAt(fila, 0).toString();
+
+        String titulo =
+                modeloTabla.getValueAt(fila, 1).toString();
+
+        int respuesta = JOptionPane.showConfirmDialog(
+                this,
+                "¿Está seguro de eliminar el libro \"" + titulo + "\"?",
+                "Confirmar eliminación",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE);
+
+        if (respuesta == JOptionPane.YES_OPTION) {
+
+            boolean eliminado =
+                    libroService.eliminarLibro(isbn);
+
+            if (eliminado) {
+
+                actualizarTabla();
+                limpiarCampos();
+
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Libro eliminado correctamente.");
+
+            } else {
+
+                JOptionPane.showMessageDialog(
+                        this,
+                        "No fue posible eliminar el libro.",
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE);
+            }
+        }
     }
     
     public static void main(String[] args) {
